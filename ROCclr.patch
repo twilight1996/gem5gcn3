@@ -1,0 +1,49 @@
+diff --git a/device/rocm/rocblit.cpp b/device/rocm/rocblit.cpp
+index 716790c8..67b37913 100644
+--- a/device/rocm/rocblit.cpp
++++ b/device/rocm/rocblit.cpp
+@@ -794,29 +794,7 @@ bool KernelBlitManager::createProgram(Device& device) {
+   // Save context and program for this device
+   context_ = device.blitProgram()->context_;
+   context_->retain();
+-  program_ = device.blitProgram()->program_;
+-  program_->retain();
+-
+-  bool result = false;
+-  do {
+-    // Create kernel objects for all blits
+-    for (uint i = 0; i < BlitTotal; ++i) {
+-      const amd::Symbol* symbol = program_->findSymbol(BlitName[i]);
+-      if (symbol == nullptr) {
+-        break;
+-      }
+-      kernels_[i] = new amd::Kernel(*program_, *symbol, BlitName[i]);
+-      if (kernels_[i] == nullptr) {
+-        break;
+-      }
+-      // Validate blit kernels for the scratch memory usage (pre SI)
+-      if (!device.validateKernel(*kernels_[i], &gpu())) {
+-        break;
+-      }
+-    }
+-
+-    result = true;
+-  } while (!result);
++  bool result = true;
+ 
+   // Create an internal constant buffer
+   constantBuffer_ = new (*context_) amd::Buffer(*context_, CL_MEM_ALLOC_HOST_PTR, 4 * Ki);
+diff --git a/device/rocm/rocdevice.cpp b/device/rocm/rocdevice.cpp
+index 32cc259c..97950ed7 100755
+--- a/device/rocm/rocdevice.cpp
++++ b/device/rocm/rocdevice.cpp
+@@ -794,6 +794,9 @@ bool Device::createBlitProgram() {
+ #endif  // USE_COMGR_LIBRARY
+ 
+   blitProgram_ = new BlitProgram(context_);
++  if (blitProgram_ != nullptr) {
++    return true;
++  }
+   // Create blit programs
+   if (blitProgram_ == nullptr || !blitProgram_->create(this, scheduler)) {
+     delete blitProgram_;
